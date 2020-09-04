@@ -35,6 +35,8 @@ public class MainActivity extends AppCompatActivity {
         //새창 허용
         WebSettings set = web.getSettings();
         set.setSupportMultipleWindows(true);
+
+        //메인슬라이드 영상 멈춤 현상 제거
         set.setMediaPlaybackRequiresUserGesture(false);
         web.setWebChromeClient(new WebChromeClient() {
 
