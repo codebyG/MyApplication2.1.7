@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">서울시민교회</string>
+    <color name="bg">#FFFFFF</color>
+    <string name="user_agent_suffix">SSCWS/1.7</string>
+</resources>
