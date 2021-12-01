@@ -27,10 +27,10 @@ public class RetriveTweetTask extends AsyncTask<String, Void, Boolean> {
         } catch (PackageManager.NameNotFoundException e) {
             e.printStackTrace();
         }
-        JLog.d("aaaa"+store_version);
-        JLog.d("bbbb"+device_version);
+        JLog.d("store_version :::"+store_version);
+        JLog.d("device_version :::"+device_version);
         boolean result = false;
-        if (device_version !=null && device_version !=null&& store_version.compareTo(device_version) > 0) {
+        if (device_version != null && store_version != null && store_version.compareTo(device_version) > 0) {
             JLog.d("업데이트 필요");
             result = true;
         }
