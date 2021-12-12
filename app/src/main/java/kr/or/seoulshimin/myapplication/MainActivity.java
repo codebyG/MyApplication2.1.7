@@ -43,13 +43,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean onCreateWindow(WebView view, boolean dialog, boolean userGesture, Message resultMsg)
             {
-                /*WebView newWebView = new WebView(MainActivity.this);
-                view.addView(newWebView);
-                WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
-                transport.setWebView(newWebView);
-                resultMsg.sendToTarget();
-                return true;*/
-
                 WebView.HitTestResult result = view.getHitTestResult();
                 String data = result.getExtra();
                 Context context = view.getContext();
@@ -79,7 +72,6 @@ public class MainActivity extends AppCompatActivity {
         );
 
 
-
         //쿠키 동기화
         web.setWebViewClient(new WebViewClient(){
 
@@ -95,30 +87,26 @@ public class MainActivity extends AppCompatActivity {
         );
 
         //android.os.NetworkOnMainThreadException 발생으로 AsyncTask 사용
+
+        /*************************/
+        /* 버전 체크 및 업데이트 */
+        /*************************/
+        //1.8 버전부터 사용가능 20211212 -구글 버전확인 불가로 변경
+        //1.5 버전부터 사용가능 X
+        //rt 버전업데이트 필요, ver 현재 기기 설치 버전
+
         Context context =  MainActivity.this;
         RetriveTweetTask rtt = new RetriveTweetTask(context);
-        Boolean rt = false;
+        Boolean hasUpdateVerTf = false;
         try {
-            rt = rtt.execute(getPackageName()).get();
+            hasUpdateVerTf = rtt.execute(getPackageName()).get();
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (ExecutionException e) {
             e.printStackTrace();
         }
 
-        /*************************/
-        /* 버전 체크 및 업데이트 */
-        /*************************/
-        String device_version = "";
-        try {
-            device_version = context.getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
-        } catch (PackageManager.NameNotFoundException e) {
-            e.printStackTrace();
-        }
-
-        //1.5버전부터 사용가능
-        //rt 버전업데이트 필요, ver 현재 기기 설치 버전
-        if(rt){
+        if(hasUpdateVerTf){
             AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(
                     context);
 
@@ -165,9 +153,30 @@ public class MainActivity extends AppCompatActivity {
         //YTPlayer 실행 시 반드시 필요
         web.getSettings().setDomStorageEnabled(true);
         web.loadUrl("http://seoulshimin.or.kr/");
-
-
     }
+
+    protected void onPause() {
+        super.onPause();
+        try {
+            Class.forName("android.webkit.WebView")
+                    .getMethod("onPause", (Class[]) null)
+                    .invoke(web, (Object[]) null);
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    protected void onResume() {
+        super.onResume();
+        try {
+            Class.forName("android.webkit.WebView")
+                    .getMethod("onResume", (Class[]) null)
+                    .invoke(web, (Object[]) null);
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     //뒤로가기 시 이전페이지
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if ((keyCode == KeyEvent.KEYCODE_BACK) && web.canGoBack()) {
