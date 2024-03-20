@@ -122,7 +122,7 @@ public class MainActivity extends AppCompatActivity {
                                 public void onClick(
                                         DialogInterface dialog, int id) {
                                     // 업데이트로 이동한다
-                                    JLog.d("Move for update");
+                                    //JLog.d("Move for update");
 
                                     final String appPackageName = getPackageName();
                                     try {
