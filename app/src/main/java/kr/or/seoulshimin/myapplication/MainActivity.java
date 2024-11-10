@@ -8,7 +8,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Message;
-import androidx.appcompat.app.AppCompatActivity;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.WindowManager;
 import android.webkit.CookieManager;
@@ -19,14 +19,29 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
-import java.util.concurrent.ExecutionException;
+import androidx.activity.result.IntentSenderRequest;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.activity.result.ActivityResultLauncher;
+
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+import com.google.android.play.core.appupdate.AppUpdateInfo;
+import com.google.android.play.core.appupdate.AppUpdateManager;
+import com.google.android.play.core.appupdate.AppUpdateManagerFactory;
+import com.google.android.play.core.appupdate.AppUpdateOptions;
+import com.google.android.play.core.install.model.AppUpdateType;
+import com.google.android.play.core.install.model.UpdateAvailability;
 
 public class MainActivity extends AppCompatActivity {
 
     WebView web;
 
+    private AppUpdateManager appUpdateManager;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        Log.d("onCreate","start");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         web = (WebView) this.findViewById(R.id.webview1);
@@ -73,7 +88,6 @@ public class MainActivity extends AppCompatActivity {
 
         //쿠키 동기화
         web.setWebViewClient(new WebViewClient(){
-
                 @Override
                 public void onPageFinished(WebView view, String url) {
                     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
@@ -94,8 +108,8 @@ public class MainActivity extends AppCompatActivity {
         //1.5 버전부터 사용가능 X
         //rt 버전업데이트 필요, ver 현재 기기 설치 버전
 
-        Context context =  MainActivity.this;
-        RetriveTweetTask rtt = new RetriveTweetTask(context);
+        // sdk30 부터 동작 안됨 20241108 - 아래코드로 대체
+        /*  RetriveTweetTask rtt = new RetriveTweetTask(context);
         Boolean hasUpdateVerTf = false;
         try {
             hasUpdateVerTf = rtt.execute(getPackageName()).get();
@@ -103,9 +117,9 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         } catch (ExecutionException e) {
             e.printStackTrace();
-        }
+        }*/
 
-        if(hasUpdateVerTf){
+         /* if(false){
             AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(
                     context);
 
@@ -145,7 +159,21 @@ public class MainActivity extends AppCompatActivity {
 
             // 다이얼로그 보여주기
             alertDialog.show();
-        }
+        }*/
+
+        // 업데이트 상태 확인 //(업데이트 이 코드로 변경 - 20241108)
+        Context context =  MainActivity.this;
+        appUpdateManager = AppUpdateManagerFactory.create(context);
+        Task<AppUpdateInfo> appUpdateInfoTask = appUpdateManager.getAppUpdateInfo();
+
+        appUpdateInfoTask.addOnSuccessListener(new OnSuccessListener<AppUpdateInfo>() {
+            @Override
+            public void onSuccess(AppUpdateInfo appUpdateInfo) {
+                if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE) {
+                    MainActivity.this.startUpdate(appUpdateInfo, AppUpdateType.IMMEDIATE);
+                }
+            }
+        });
 
         web.getSettings().setBuiltInZoomControls(true);
         web.getSettings().setSupportZoom(true);
@@ -174,6 +202,23 @@ public class MainActivity extends AppCompatActivity {
         } catch(Exception e) {
             e.printStackTrace();
         }
+
+        //인앱업데이트  - 백그라운드로 내려가거나 업데이트중 멈추었다 다시 켯을때 계속 진행
+        if(appUpdateManager!=null){
+            appUpdateManager
+                    .getAppUpdateInfo()
+                    .addOnSuccessListener(
+                            appUpdateInfo -> {
+                                if (appUpdateInfo.updateAvailability()
+                                        == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS) {
+                                    // If an in-app update is already running, resume the update.
+                                    appUpdateManager.startUpdateFlowForResult(
+                                            appUpdateInfo,
+                                            activityResultLauncher,
+                                            AppUpdateOptions.newBuilder(AppUpdateType.IMMEDIATE).build());
+                                }
+                            });
+        }
     }
 
     //뒤로가기 시 이전페이지
@@ -185,6 +230,31 @@ public class MainActivity extends AppCompatActivity {
         return super.onKeyDown(keyCode, event);
     }
 
+    //인앱업데이트 실행
+    void startUpdate(AppUpdateInfo info,int type){
+        appUpdateManager.startUpdateFlowForResult(
+                // Pass the intent that is returned by 'getAppUpdateInfo()'.
+                info,
+                // an activity result launcher registered via registerForActivityResult
+                activityResultLauncher,
+                // Or pass 'AppUpdateType.FLEXIBLE' to newBuilder() for
+                // flexible updates.
+                AppUpdateOptions.newBuilder(AppUpdateType.IMMEDIATE).build());
+    }
+
+    //인앱업데이트 진행 여부에 따른 처리
+    ActivityResultLauncher<IntentSenderRequest> activityResultLauncher = registerForActivityResult(new ActivityResultContracts.StartIntentSenderForResult(),result -> {
+        if (result.getResultCode() != RESULT_OK) {
+            // If the update is cancelled or fails,
+            // you can request to start the update again.
+            // 앱 업데이트를 안했을때 처리를 해주면됨.
+            Log.v("UPDATE_SUCCESS","CANCEL");
+        }else{
+            // 앱 업데이트를 진행되고 다시 돌아왔을경우 계속 진행되도록 작업.
+            Log.v("UPDATE_SUCCESS","COMPLETE");
+        }
+
+    });
 
 }
 

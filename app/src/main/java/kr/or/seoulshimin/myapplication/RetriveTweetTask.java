@@ -22,24 +22,9 @@ public class RetriveTweetTask extends AsyncTask<String, Void, Boolean> {
         mContext = context;
     }
 
-    @Override
+    @Override //업데이트 체크 불가 !!! derprecated
     protected Boolean doInBackground(String... packageName) {
-        final boolean[] result = {false};
-        AppUpdateManager appUpdateManager = AppUpdateManagerFactory.create(mContext);
 
-        // Returns an intent object that you use to check for an update.
-        Task<AppUpdateInfo> appUpdateInfoTask = appUpdateManager.getAppUpdateInfo();
-
-        // Checks that the platform will allow the specified type of update.
-        appUpdateInfoTask.addOnSuccessListener(appUpdateInfo -> {
-            if (appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
-                    // This example applies an immediate update. To apply a flexible update
-                    // instead, pass in AppUpdateType.FLEXIBLE
-                    && appUpdateInfo.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE)) {
-                // Request the update.
-                result[0] = true;
-            }
-        });
 
         /*String store_version = CommonUtils.getMarketVersion(packageName[0]);
         String device_version = "";
@@ -62,7 +47,7 @@ public class RetriveTweetTask extends AsyncTask<String, Void, Boolean> {
 
         Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));*/
 
-        return result[0];
+        return null;
     }
 
     @Override
